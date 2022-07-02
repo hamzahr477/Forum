@@ -1,0 +1,37 @@
+Met le dossier P1 dans WWW
+Le login l'administrateur 
+User : hayarhamza
+Mot de pass : 159632478
+
+login users
+email : hamza1@email.com  , hamza2@rmail.com , ... , hamza10@email.com;
+mdp : hamzahamza
+
+
+Vous pouvez mettre les lien des réseau sociaux en page accueil.php at Model-bottom.php
+
+
+les fichier que n'est pas autoriser de publie 
+.exe .rar .pif  
+
+
+pour la base de donnéess'il ne connecte pas et si il affiche ereur en base de données esseyer d'ecrire le port de SBGD apres localhost en fichier dbco.php
+
+
+pour modifier l'email qui reçoit les emails de contact esseyer de modifier la ligne 46 de contact_us.php
+
+au cas au vous retrouve un ereure de mailer autoloade essayer de mettre a joure la version du PHP
+
+
+pour ajouter un autre admin il faut modifier le type de compte vers admin dans la table di membre_infos ans phpmyadmin 
+
+
+nous espérons qu'on a expliqué le maximum si vous retrouve un error veuiller contactez via email:
+
+-hamzahayar1@Gmail.com
+-meryemhilani21@gmail.com
+
+ou sur Whatsapp :
++212-648275609
+
+Merci!!
