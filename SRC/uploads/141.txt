@@ -1,0 +1,454 @@
+at
+
+at  [TIME] set a job
+atq / at -l show list of job 
+atrm [number of job] / at -d [number of job] delet the job
+the jobs was enregestred on /var/spool/at/
+at -c [number of job] to show script of job
+
+
+
+cron 
+
+crontab -e  [-u for specefic user ] show vim editor to set the jobs
+Min  Hour  Day   Mounth(number/first 3char)  DOW  Job(Command)
+Ex
+8  10 6 9 * echo 'hello' (use * to start job for all the time or */[number] for many time )
+crontab -l showthe setting jobs
+crontab -r delet all jobs
+crontab <filename> to fill file of cron by filename
+to start job until system shut down save script on /etc/cron.[monthly/dayli/]/[Script]
+
+
+
+systemd-tmpfiles --remove remove all tmp files
+systemd-tmpfiles --remove clean all tmp files that it not (C,R,M) in last 10d
+/usr/lib/tempfiles.d/tmp.conf configuration file of systemd-tmpfiles
+
+
+
+ps aux to show all processes runing
+ps aox [user, nice, pid ..] [--sort = [column] order by column] show all processes with costumized column 
+nice(-20,19) represent level of process 
+gnome-system-monitor (commond ui to show all process and chang nice value) only root can set negative value
+nice [-n number] [programme] run programe with nice value (default is 10)
+renice [PID] -n [number] for change nice value 
+
+
+
+Access control list
+
+getfacl fileA show acc*cess controll list of fileA
+setfacl -m u:[user]:[r,w,x] g:[group]:[r,w,x] o::[r,w,x] fileA change controll list of fileA
+setfacl --set ////////////////////////// overid
+setfacl -R ......... for set that config for all file under thet directory 
+ setfacl -d ......... set default access list 
+setfacl -x u:[usr] remov acl for usr
+setfacl -b file return to default (chmod) or [-k] to return default
+
+
+
+SE linux
+subject (users , services) access to object(post, socket,folders, files )
+id -Z display lable of user
+ps auwZ lable of all processes
+getenforce show mode of enforce (enforcing/permessive/disable)
+setenforce [0/1]
+vim /etc/selunix/config configuration file of selinux
+chcon -t [label] file change lable of file
+ restorecon -R file (return to default lable )
+sestatus  show status of selinux
+rpm -qa | grep setraboul monitoring selinux 
+tailf /etc/log/messages  
+sealert tool gui for troubleshoot seLunix
+
+
+
+
+LDAP
+config-server
+setenforce 0
+systemctl stop firewalld
+systemctl disable firewalld
+vim /ect/host to set a dns for my server 
+vim /etc/yum.repos.d/local.repos
+config{
+[local]
+	name=local
+	basurl=file://[path of iso]
+	enable =1 
+	gpgcheck = 0
+}
+yum -y install ipa-server bind-dyndb ldap ipa-server-dns
+ipa-server-install --setup-dns
+cat /etc/resolv.conf to check dns 
+authconfig --enablekhomedir --update
+systemctl start sssd
+systemctl enable sssd
+ipa user-add to add user in server
+/etc/ipa/ca.crt  location of certeficat
+
+
+config-client
+hostnamectl set-hostname client.redhat.com
+setenforce 0
+systemctl stop firewalld
+systemctl disable firewalld
+yum -y install authconfig-gtk sssd krb5-workstation
+
+authconfig [-tui] [-gui] [-gtk]
+etc/openldap/caracerts  (pathof certeficat)
+
+
+NFS
+
+server
+[root@master ~]# yum install -y nfs-utils
+[root@master ~]# vim /etc/exports
+/data   -rw     *(rw,no_root_squash)
+
+[root@master ~]# systemctl start nfs
+
+client
+[root@client ~]# showmount -e  192.168.1.100
+[root@client ~]# vim /etc/auto.master
+/nfsserver      /etc/auto.nfsserver
+
+[root@client ~]# vim /etc/auto.nfsserver
+mydata  -rw     192.168.1.100:/data
+
+[root@client ~]# systemctl restart autofs
+[root@client ~]# cd /nfsserver/
+[root@client nfsserver]# cd mydata
+
+
+
+samba
+
+
+[root@client ~]# yum -y install autofs
+[root@client ~]# vim /etc/auto.master
+/home/guests    /etc/auto.guests
+
+[root@client ~]# vim /etc/auto.guests
+*	-fstype=cifs,username=ldapusers,password=password ://master.redhat.com/data/&
+
+[root@master ~]# vim /etc/samba/smb.conf 
+[data]
+comment = LDAP user  home directories
+path = /home/guests
+public = yes
+writable = no
+
+
+
+
+
+
+MBR vs GPT:
+
+
+- MBR supports a maximum of four primary partitions (max of 63 logical patitions), with a total size of the hard disk of 2Tbyte (2^31 byte)
+- GPT supports a maximum of 128 partitions, with a total size of the hard disk of (2^72 byte)
+
+
+
+[root@master ~]# fdisk -l /dev/sdb       (CLI : show all disk of pc)
+[root@master ~]# fdisk /dev/sdb       (CLI : show all ob*ption for isk mannagement)
+[root@master ~]# partprobe /dev/sdb            (or reload the system to fix the changes)
+
+[root@master ~]# mkfs.ext4 /dev/sdb1     (format the patition by mkfs.ext4)
+
+[root@master ~]# mkdir /mydata
+[root@master ~]# mount /dev/sdb1 /mydata/  (mount partition on mydata)
+
+[root@master ~]# df -h
+[root@master ~]# df -hT              (show the file system used)
+[root@master ~]# mount | grep sdb    (show all mounted systems) 
+- The file system can be mounted using more than one directory. (to check)
+[root@master ~]# umount /mydata/       OR  [root@master ~]# umount /dev/sdb1  
+[root@master ~]# vim /etc/fstab (to mount permently)
+partitio         mount folder   type    permission     FSC   
+/dev/sdb1       /mydata         ext4    defaults        0 0
+blkid [partitio] (get UUID of partition)
+UUID=2cc90e10-8a48-4cbe-8b8b-dd1097ed0ae9   /mydata         ext4    defaults        0 0
+[root@master ~]# dd if=/dev/random of=/dev/sdb bs=1M count=512    (to delete the MBR of the hard disk)
+
+
+Swap:
+[root@master ~]# mkswap /dev/sdb1 (create swap partition)
+[root@master ~]# swapon /dev/sdb1 
+[root@master ~]# swapon -a             (activate all swap spaces listed in the /etc/fstab file)                 
+[root@master ~]# free -m               (show information about  the swap file system)
+[root@master ~]# swapon -s             (show information about the swap file system)
+[root@master ~]# vim /etc/fstab   (to mount the swap)
+/dev/sdb2       swap         ext4    defaults        0 0
+[root@master ~]# swapoff /dev/sdb1
+
+- A file can be used as a swap file:  (use a file as swap file)
+[root@master ~]# dd if=/dev/random of=/swap_file bs=1M count=1024
+[root@master ~]# mkswap /swap_file
+[root@master ~]# swapon /swap_file
+
+
+LVM
+
+Logical volume management (LVM):
+- Volumes can consist of more than one disk.
+- Easy resize operation.
+- Easy replacement of failing disks.
+- Advanced options such a working with snapshots, which allows you to create backups even if they are open.
+- Easy to add new volumes.
+- Easy to add many volumes.
+- Upto 256 logical volume.
+
+steps:
+1- Partition physical storage
+2- Create physical volume (PV)   (LVM automatically segments PVs into physical extents (PE))
+3- Create volume group(VG)       (PV can only be allocated to a single VG)
+4- Create logical volume (LV)
+
+config
+
+[root@master ~]# pvcreate /dev/sdb1 /dev/sdc1 /dev/sdd1   (label the partition for use with LVM) (optional)
+[root@master ~]# pvdisplay (show )
+[root@master ~]# pvdisplay /dev/sdb1
+[root@master ~]# pvs
+[root@master ~]# vgcreate VG1 /dev/sdb /dev/sdc1 /dev/sdd1 (creat vomume group name VG1)
+[root@master ~]# vgdisplay  (show information of volume group)
+[root@master ~]# vgdisplay VG1 
+[root@master ~]# vgs (show information of volume group)(display horizontaly)
+[root@master ~]# lvcreate -n LV1 -L 2G VG1  (create logical volume LV1)
+[root@master ~]# lvdisplay 
+[root@master ~]# lvdisplay /dev/VG1/LV1 (show information of LV1)
+[root@master ~]# lvs
+[root@master ~]# mkfs.xfs /dev/VG1/LV1  (put a file system on Logical memory MV1)
+[root@master ~]# mkdir data  
+[root@master ~]# mount /dev/VG1/LV1 data
+[root@master ~]# df -h
+
+
+Extending Logical Volumes (no down time) ( add +volume):
+
+[root@master ~]# pvcreate /dev/sde1 (creat a physical voluom from an other disk)
+[root@master ~]# vgextend VG1 /dev/sde1 (add the logical volume sde1 to volume group VG1)
+[root@master ~]# lvextend -L +3G /dev/VG1/LV1 (add 3gigabyte from volume group to logivcal volume)
+[root@master ~]# xfs_growfs /dev/VG1/LV1           (update the file system for XFS file systems)
+[root@master ~]# resize2fs /dev/VG1/LV1            (update the file system for other file systems)
+Or:
+[root@master ~]# lvextend -r -L +3G /dev/VG1/LV1   (extend and update in one step)*
+
+
+Shrinking a volume group( - volume ):
+- XFS doesn't support shrinking.
+[root@master ~]# umount data
+[root@master ~]# resize2fs /dev/VG1/LV1 100M 
+[root@master ~]# e2fsck -f /dev/VG1/LV1
+[root@master ~]# lvreduce --size -3G /dev/VG1/LV1  (reduce the volume minice 3gb)
+[root@master ~]# lvreduce --size -r -3G /dev/VG1/LV1 
+[root@master ~]# vgreduce VG1 /dev/sde1          (removes sde1 from VG1)
+[root@master ~]# mount /dev/VG1/LV1  data
+
+
+take a sanpshot
+[root@master ~]# lvcreate --size 100m --snapshot --name snap /dev/VG1/LV2
+
+folder snap tak a back up if LV2 get unmounted
+
+
+
+NFS 2
+- NFSv4 uses the TCP protocol to communicate with the server, while older versions of NFS may use either TCP or UDP. 
+- NFS requires rpcbind, which dynamically assigns ports for RPC services and can cause problems for configuring firewall rules. To allow clients to access NFS shares behind a firewall, edit the /etc/sysconfig/nfs configuration file to control which ports the required RPC services run on. 
+( Allow TCP and UDP port 2049 for NFS and allow TCP and UDP port 111 (rpcbind/sunrpc)). 
+- NFS doesn't support user authentication.
+- All users can see the exported directories even if they don't have access.
+
+config server
+
+[root@master ~]# yum install -y nfs-utils (install packege)
+[root@master ~]# systemctl start nfs-server             (nfs in previous distributions)
+[root@master ~]# systemctl enable nfs-server      
+[root@master ~]# systemctl stop firewalld   (stop firewall)
+[root@master ~]# vim /etc/exports   (put path of data to share it)
+/data           192.168.1.0/24(ro)   (all client of network can access to data)
+/data		192.168.1.101(rw) (just user 101 can accesss to data ) permistion (ro(readonly) or rw(readwrite) sync to sync new file )
+/data		ecst.com(rw)         (other permission : root_squach (the default) / no_root_squach(not recomended))
+ /data		192.168.1.0/24(ro)	192.168.2.0/24(rw)
+to restart service
+[root@master ~]# systemctl restart nfs-server        (terminates all open sessions)
+[root@master ~]# exportfs -r                         (re-read the config file without termination of open sessions)
+[root@master ~]# exportfs -f                         (force re-read the config file)
+
+
+[root@client ~]# mount 192.168.1.100:/data /root/data (to mount a sharing file)
+[root@client ~]# vim /etc/fstab 
+192.168.1.100:/data     /root/data      nfs     _netdev         0       0
+or)
+192.168.1.100:/data	/root/data	nfs	defaults,timeout=3	0	0
+root_squach make all user com from enetwork be as an other for server so all users working with nfs had a permisions like other
+no_root_squach make users as a root if someone connected to server with nfs server look at him as a root 
+
+
+
+Autofs:
+
+
+
+The automounter is a service (autofs} that can automatically mount NFS shares "on demand," and will automatically unmount NFS shares when they are no longer being used.
+
+[root@client ~]# yum install -y autofs (install autofs)
+[root@client ~]# systemctl start autofs 'start package'
+[root@client ~]# systemctl enable autofs 
+[root@client ~]# vim /etc/auto.master (set path of file of config)
+/root/data      /etc/auto.data
+
+[root@client ~]# vim /etc/auto.data  (set config file)
+pub    -rw     192.168.1.100:/data 
+where pub is the target directory we want to access.
+
+[root@client ~]# systemctl restart autofs
+[root@client ~]# cd data/pub
+[root@client ~]# df -hT (show mounting information)
+192.168.1.100:/data nfs4       10G   32M   10G   1% /root/data/pub
+
+[root@client ~]# vim /etc/autofs.conf (to change tim for unmouting)
+timeout = 300                       (the idle user will be disconnected after 5 min by default)
+
+
+
+SAMBA 2
+
+
+- Samba allows file and print sharing between computers running Microsoft Windows and computers running Unix. 
+-  It is an implementation of dozens of services and a dozen protocols, including (Netbios, SMB, CIFS, WINS, DFS and more)
+- Samba (137,138 UDP and 139,445 TCP)
+
+
+
+[root@master ~]# yum install samba -y (to install samba)
+[root@master ~]# systemctl start smb nmb (start packeges)
+[root@master ~]# systemctl stop firewalld (stop firewalld)
+[root@master ~]# setenforce 0
+[root@master ~]# vim /etc/samba/smb.conf 
+[Shared_data]                             (any comment)
+path = /shared_data (path of share directory)
+browseable = yes    
+read only = yes
+writable = no
+public = yes
+hosts allow = 192.168.1.0/24
+valid users = abeer ahmed mohamed (users can access to data)
+
+[root@master ~]# systemctl restart smb nmb (restart packages )
+[root@master ~]# smbpasswd -a abeer (set password for user abeer)
+[root@master ~]# setenforce 0  (set permessiv for selinux)
+[root@master ~]# chmod 777 /shared_data (set a permession RWXRWXRWX for shered_data)
+
+for connection (client side)
+
+1- For Windows users:
+run.. \\192.168.1.100
+
+GUI 
+2- For Linux users:
+Places.. connect to server
+smb://192.168.1.100
+CLI
+
+Mounting SMB file systems with the automounter:
+[root@client ~]# yum -y install samba-client (install samba-client)
+[root@client ~]# smbclient -L 192.168.1.100  (connect with server by protocol samba)
+[root@client ~]# yum -y install cifs-utils (install packages cifs to mount)
+[root@client ~]# mount //192.168.1.100/Shared_data /data -o,username=abeer,password=123 
+[root@client ~]# vim /etc/fstab   (config  fstab to mount and unmount automaticaly )
+//192.168.1.100/Shared_data     /data   cifs    _netdev,username=abeer,password=123      0       0
+
+[root@client ~]# vim /root/secure.smb            (the file name can be any thing to protect inside it username and password)
+username=abeer
+password=123
+
+[root@client ~]# chmod 600 /root/secure.smb (set chmod for root only can rw  )
+[root@client ~]# vim /etc/fstab (change fstab to get username and passwor from secure.smb)
+//192.168.1.100/Shared_data     /data   cifs    _netdev,credentials=/root/secure.smb     0       0
+[root@client ~]# mount -a
+[root@client ~]# df -hT      
+
+
+
+boot
+
+Runing Step
+1- POST is run using UEFI or BIOS.
+2- The system firmware searches for a bootable device, by searching for a Master Boot Record (MBR).
+3- The system firmware reads a boot loader from disk (Grub2).
+4- The boot loader loads its configuration from disk, and presents the user with a menu of possible configurations to boot.
+5- The boot loader loads the configured kernel and initramfs from disk and places them in memory.
+
+
+[root@master ~]# vim /etc/default/grub   (config file of running)
+[root@master ~]# grub2-mkconfig                (compiling the grub after editing the file grup) 
+[root@master ~]# ls /usr/lib/systemd/system/    (default scripts. Don't touch it)
+[root@master ~]# cd /etc/systemd/system/        (put your script here, to run  script when systeme start)
+
+
+Selecting a Boot Target:
+1- shutdown.target 
+2- multi-user.target         (multiple users, text-based logins only)
+3- graphical.target          (multiple users, graphical and text-based logins)
+4- reboot.target
+5- rescue.target
+6- emergency.target          (the root file system mounted read-only)
+7- and more...
+
+[root@master ~]# systemctl get-default (get the default target)
+[root@master ~]# systemctl set-default graphical.target  (change boot target)
+[root@master ~]# systemctl default  (return to default target)
+
+Selecting a different target at boot time:
+1. (Re)boot the system.
+2. Interrupt the boot loader menu countdown by pressing any key.
+3. Press 'E' to edit the current entry.
+4. Move the cursor to the line that starts with linux16. 
+5. Append systemd.unit=desired.target.
+6. Press Ctrl+x to boot with these changes.
+
+
+Password Recovery:
+1. Reboot the system.
+2. Interrupt the boot loader countdown by pressing any key.
+3. Press 'E' to edit the selected entry.
+4. Move the cursor to the kernel command line (the line that starts with linux16).
+5. Append rd.break (this will break just before control is handed from the init ramfs to the actual system).
+6. Press Ctrl+x to boot with the changes.
+7. mount -o remount,rw /sysroot
+8. chroot /sysroot
+9. passwd root
+10. touch /.autorelabel  (**********************)
+11. Ctrl+D  (to exit)
+12. Ctrl+D
+
+
+
+
+Repairing File System Issues at Boot (for example LUKS issues):
+1. (Re)boot the system.
+2. Interrupt the boot loader menu countdown by pressing any key.
+3. Press e to edit the current entry.
+4. Move the cursor to the line that starts with linux16. 
+5. Append systemd.unit=emergency.target
+6. [root@master ~]# mount -o remount,rw /
+7. Edit /etc/fstab file.
+8. Edit /etc/cryptotab file.         (in case of LUKS file system)
+=======================================================
+Repairing Boot Loader Issues (grub2): (and also for recovry password of grup)
+- Grand Unified BootLoader.
+1. Boot from the CD drive.
+2. type <linux rescue>
+3. #df -h
+4. #chroot /mnt/sysimage
+5. #grub2-install /dev/sda
+=======================================================
+Securing GRUB2 with a password:
+[root@master ~]# grub2-setpassword 
+
